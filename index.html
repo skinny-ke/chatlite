@@ -1,0 +1,58 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chatzone</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              dark: {
+                primary: '#1a1a1a',
+                secondary: '#2c2c2c',
+                accent: '#3a3a3a',
+                text: '#e0e0e0',
+                'text-secondary': '#a0a0a0',
+              },
+              light: {
+                primary: '#ffffff',
+                secondary: '#f0f2f5',
+                accent: '#e4e6eb',
+                text: '#050505',
+                'text-secondary': '#65676b',
+              },
+              blue: {
+                DEFAULT: '#0084ff',
+                dark: '#0073e6'
+              },
+              green: {
+                DEFAULT: '#31a24c'
+              }
+            }
+          }
+        }
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.548.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-light-secondary dark:bg-dark-primary">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
