@@ -28,7 +28,7 @@ export interface Message {
   content: string;
   timestamp: number;
   reactions: Reaction[];
-  type: 'text' | 'image' | 'file' | 'call-log';
+  type: 'text' | 'image' | 'file' | 'call-log' | 'audio';
   groundingMetadata?: GroundingMetadata;
   callInfo?: {
       duration: string;

@@ -83,7 +83,7 @@ const ChatLayout: React.FC = () => {
   };
   
 
-  const handleSendMessage = useCallback(async (content: string, chatId: string, type: 'text' | 'image' = 'text') => {
+  const handleSendMessage = useCallback(async (content: string, chatId: string, type: 'text' | 'image' | 'audio' = 'text') => {
     if (!currentUser) return;
 
     const newMessage: Message = {

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
 import type { Chat, User, Message } from '../types';
-import { MoreVertical, Phone, Video, Search, Send, Smile, Paperclip, Mic, X } from 'lucide-react';
+import { MoreVertical, Phone, Video, Search, Send, Smile, Paperclip, Mic, X, StopCircle } from 'lucide-react';
 import EmojiPicker from './EmojiPicker';
 import ReactionPicker from './ReactionPicker';
 import { ThemeContext } from '../contexts/ThemeContext';
@@ -18,6 +18,9 @@ const MessageBubble: React.FC<{ message: Message; isOwn: boolean; sender?: User;
   const renderContent = () => {
     if (message.type === 'image') {
       return <img src={message.content} alt="sent" className="rounded-lg max-w-xs cursor-pointer" />;
+    }
+     if (message.type === 'audio') {
+      return <audio src={message.content} controls className="max-w-xs" />;
     }
     if (message.type === 'call-log') {
         const icon = message.callInfo?.type === 'missed' ? 'PhoneMissed' : message.callInfo?.type === 'outgoing' ? 'PhoneForwarded' : 'PhoneIncoming';
@@ -87,7 +90,7 @@ const MessageBubble: React.FC<{ message: Message; isOwn: boolean; sender?: User;
 const ChatWindow: React.FC<{
   chat: Chat;
   currentUser: User;
-  onSendMessage: (content: string, chatId: string, type: 'text' | 'image') => void;
+  onSendMessage: (content: string, chatId: string, type: 'text' | 'image' | 'audio') => void;
   onUpdateMessage: (chatId: string, messageId: string, updatedFields: Partial<Message>) => void;
 }> = ({ chat, currentUser, onSendMessage, onUpdateMessage }) => {
   const [message, setMessage] = useState('');
@@ -98,6 +101,11 @@ const ChatWindow: React.FC<{
   const [isCalling, setIsCalling] = useState(false);
   const [callType, setCallType] = useState<'video' | 'audio' | null>(null);
   const [incomingCall, setIncomingCall] = useState<User | null>(null);
+  
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
 
 
   useEffect(() => {
@@ -114,6 +122,15 @@ const ChatWindow: React.FC<{
       return () => clearTimeout(timer);
     }
   }, [chat.id, chat.name, chat.participants, currentUser.id]);
+  
+  useEffect(() => {
+    // Cleanup stream on component unmount
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
 
   const handleSendMessage = () => {
@@ -146,6 +163,47 @@ const ChatWindow: React.FC<{
     }
     
     onUpdateMessage(chat.id, messageId, { reactions: newReactions });
+  };
+  
+   const handleStartRecording = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Your browser does not support audio recording.');
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        onSendMessage(audioUrl, chat.id, 'audio');
+        stream.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error('Error starting recording:', err);
+      alert('Microphone access was denied. Please allow microphone access in your browser settings.');
+    }
+  };
+
+  const handleStopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
   };
   
   const startCall = (type: 'video' | 'audio') => {
@@ -233,11 +291,15 @@ const ChatWindow: React.FC<{
             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
           />
           {message ? (
-            <button className="p-2 rounded-full bg-blue text-white" onClick={handleSendMessage}>
+            <button className="p-2 rounded-full bg-blue text-white" onClick={handleSendMessage} aria-label="Send message">
                 <Send className="w-6 h-6" />
             </button>
-          ) : (
-            <button className="p-2 rounded-full hover:bg-light-accent dark:hover:bg-dark-accent">
+          ) : isRecording ? (
+            <button className="p-2 rounded-full bg-red-500 text-white animate-pulse" onClick={handleStopRecording} aria-label="Stop recording">
+                <StopCircle className="w-6 h-6" />
+            </button>
+           ) : (
+            <button className="p-2 rounded-full hover:bg-light-accent dark:hover:bg-dark-accent" onClick={handleStartRecording} aria-label="Record voice message">
                 <Mic className="w-6 h-6" />
             </button>
           )}
